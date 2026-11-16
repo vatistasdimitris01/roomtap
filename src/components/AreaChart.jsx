@@ -12,9 +12,9 @@ function palette() {
     : { line: '#e7e3da', muted: '#6f6a61', markerStroke: '#ffffff' }
 }
 
-export default function AreaChart({ data, format = (v) => String(v), height = 210, name = 'Time inside' }) {
+export default function AreaChart({ data, format = (v) => String(v), height = 180, name = 'Time inside' }) {
   const pal = palette()
-  const h = window.innerWidth <= 640 ? Math.round(height * 0.78) : height
+  const h = window.innerWidth <= 640 ? Math.round(height * 0.76) : height
   const series = [{ name, data: data.map((d) => Math.round(d.value)) }]
   const markerSize = data.length > 1 && data.length <= 8 ? 4.5 : 0
 
@@ -31,7 +31,7 @@ export default function AreaChart({ data, format = (v) => String(v), height = 21
     },
     colors: [SIGNAL],
     dataLabels: { enabled: false },
-    stroke: { curve: 'smooth', width: 2.5 },
+    stroke: { curve: 'smooth', width: 2 },
     fill: {
       type: 'gradient',
       gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [0, 90, 100] },
