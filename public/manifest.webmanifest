@@ -1,0 +1,16 @@
+{
+  "id": "/",
+  "name": "Room Tap",
+  "short_name": "Room Tap",
+  "description": "A quiet, simple room presence log.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "theme_color": "#6b4635",
+  "background_color": "#6b4635",
+  "icons": [
+    { "src": "/icons/roomtap.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
