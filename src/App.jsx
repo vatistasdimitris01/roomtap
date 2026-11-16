@@ -42,7 +42,7 @@ function Sidebar({ open, onClose }) {
           Endpoint live
         </div>
       </aside>
-      {open && <div className="scrim" onClick={onClose} aria-hidden="true"></div>}
+      <div className={`scrim ${open ? 'open' : ''}`} onClick={onClose} aria-hidden="true" />
     </>
   )
 }
