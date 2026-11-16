@@ -506,3 +506,31 @@ button { touch-action: manipulation; }
     padding-bottom: calc(112px + var(--safe-bottom));
   }
 }
+
+
+/* Minimal mobile chrome: hide scrollbars without disabling scrolling */
+html, body, * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Slightly smaller sun brand mark */
+.brand .mark {
+  width: 18px;
+  height: 18px;
+  padding: 5px;
+  border-radius: 8px;
+}
+.brand.small .mark {
+  width: 16px;
+  height: 16px;
+  padding: 4px;
+  border-radius: 7px;
+}
