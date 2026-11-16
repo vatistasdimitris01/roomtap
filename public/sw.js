@@ -1,4 +1,4 @@
-const CACHE_NAME = 'roomtap-shell-v1'
+const CACHE_NAME = 'roomtap-shell-v2'
 const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/favicon.svg', '/icons/roomtap.svg', '/icons/apple-touch-icon.png']
 
 self.addEventListener('install', (event) => {
