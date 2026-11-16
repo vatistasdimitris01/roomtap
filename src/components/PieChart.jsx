@@ -10,9 +10,9 @@ function palette() {
     : { paper: '#fbfbf9', ink: '#14120f', muted: '#6f6a61' }
 }
 
-export default function PieChart({ data, format = (v) => String(v), height = 240 }) {
+export default function PieChart({ data, format = (v) => String(v), height = 190 }) {
   const pal = palette()
-  const h = window.innerWidth <= 640 ? Math.round(height * 0.8) : height
+  const h = window.innerWidth <= 640 ? Math.round(height * 0.78) : height
   const total = data.reduce((s, d) => s + d.value, 0)
   const active = data.filter((d) => d.value > 0)
   const series = active.map((d) => d.value)
@@ -39,21 +39,21 @@ export default function PieChart({ data, format = (v) => String(v), height = 240
           size: '74%',
           labels: {
             show: true,
-            name: { show: true, fontSize: '13px', fontFamily: FONT, color: pal.muted, offsetY: -8 },
+            name: { show: true, fontSize: '11px', fontFamily: FONT, color: pal.muted, offsetY: -7 },
             value: {
               show: true,
-              fontSize: '24px',
+              fontSize: '19px',
               fontFamily: 'Fraunces, Georgia, serif',
               fontWeight: 600,
               color: pal.ink,
-              offsetY: 10,
+              offsetY: 8,
               formatter: (val) => format(Number(val)),
             },
             total: {
               show: true,
               showAlways: true,
               label: 'Total inside',
-              fontSize: '13px',
+              fontSize: '11px',
               fontFamily: FONT,
               color: pal.muted,
               formatter: (w) => format(w.globals.seriesTotals.reduce((a, b) => a + b, 0)),
