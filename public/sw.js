@@ -1,5 +1,5 @@
 const CACHE_NAME = 'roomtap-shell-v1'
-const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/favicon.svg', '/icons/roomtap.svg']
+const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/favicon.svg', '/icons/roomtap.svg', '/icons/apple-touch-icon.png']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)))
