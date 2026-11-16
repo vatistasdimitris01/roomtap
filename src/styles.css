@@ -484,3 +484,25 @@ button { touch-action: manipulation; }
 @supports (-webkit-touch-callout: none) {
   input, select, textarea { font-size: max(16px, 1em); }
 }
+
+
+/* Extra breathing room for iPhone Dynamic Island and bottom home area */
+@media (max-width: 900px) {
+  .mobile-bar {
+    padding-top: calc(22px + var(--safe-top));
+  }
+  .page {
+    padding-top: 30px;
+    padding-bottom: calc(104px + var(--safe-bottom));
+  }
+  .sidebar {
+    padding-top: calc(34px + var(--safe-top));
+    padding-bottom: calc(34px + var(--safe-bottom));
+  }
+}
+@media (max-width: 600px) {
+  .page {
+    padding-top: 26px;
+    padding-bottom: calc(112px + var(--safe-bottom));
+  }
+}
