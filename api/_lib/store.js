@@ -1,11 +1,3 @@
-import fs from 'node:fs'
-import path from 'node:path'
-import { get, put } from '@vercel/blob'
-
-const BLOB_PATH = 'room-tap/data.json'
-const TMP_PATH = path.join('/tmp', 'room-tap-data.json')
-const LOCAL_PATH = path.join(process.cwd(), 'data.local.json')
-
 const DEFAULT_SETTINGS = {
   enterWindow: { start: '08:00', end: '12:00' },
   leaveWindow: { start: '16:00', end: '22:00' },
@@ -20,9 +12,8 @@ const DEFAULT_SETTINGS = {
 
 const ALGORITHMS = ['smart', 'hybrid', 'time-window', 'toggle']
 
-function normalizeSettings(s) {
-  const merged = { ...DEFAULT_SETTINGS, ...s }
-  // legacy value from the previous single-entry rule
+function normalizeSettings(settings = {}) {
+  const merged = { ...DEFAULT_SETTINGS, ...settings }
   if (merged.algorithm === 'once-daily' || !ALGORITHMS.includes(merged.algorithm)) merged.algorithm = 'smart'
   if (typeof merged.timingEnabled !== 'boolean') merged.timingEnabled = DEFAULT_SETTINGS.timingEnabled
   merged.minStayMinutes = Number.isFinite(Number(merged.minStayMinutes)) ? Number(merged.minStayMinutes) : DEFAULT_SETTINGS.minStayMinutes
@@ -35,56 +26,89 @@ function normalizeSettings(s) {
   return merged
 }
 
+function config() {
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
+  if (!url || !key) throw new Error('Supabase server environment is not configured')
+  return { url: url.replace(/\/$/, ''), key }
+}
+
+async function db(path, options = {}) {
+  const { url, key } = config()
+  const response = await fetch(`${url}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+    cache: 'no-store',
+  })
+  if (!response.ok) {
+    const detail = await response.text()
+    throw new Error(`Supabase request failed (${response.status}): ${detail}`)
+  }
+  if (response.status === 204) return null
+  const text = await response.text()
+  return text ? JSON.parse(text) : null
+}
+
 function defaultData() {
   return { settings: { ...DEFAULT_SETTINGS }, events: [] }
 }
 
-function hasBlobToken() {
-  return !!process.env.BLOB_READ_WRITE_TOKEN
-}
-
 async function readData() {
-  if (hasBlobToken()) {
-    try {
-      const result = await get(BLOB_PATH, { access: 'private', useCache: false })
-      if (!result || !result.stream) return defaultData()
-      const text = await new Response(result.stream).text()
-      const data = JSON.parse(text)
-      if (!data.settings) data.settings = { ...DEFAULT_SETTINGS }
-      else data.settings = normalizeSettings(data.settings)
-      if (!Array.isArray(data.events)) data.events = []
-      return data
-    } catch (e) {
-      console.error('blob read error', e)
-      return defaultData()
-    }
+  const [settingsRows, events] = await Promise.all([
+    db('roomtap_settings?select=id,data&id=eq.default'),
+    db('roomtap_events?select=id,type,at,source,note&order=at.asc'),
+  ])
+  let settings = settingsRows?.[0]?.data
+  if (!settings) {
+    settings = { ...DEFAULT_SETTINGS }
+    await db('roomtap_settings', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ id: 'default', data: settings }),
+    })
   }
-  const p = process.env.VERCEL ? TMP_PATH : LOCAL_PATH
-  try {
-    if (fs.existsSync(p)) {
-      const data = JSON.parse(fs.readFileSync(p, 'utf8'))
-      if (!data.settings) data.settings = { ...DEFAULT_SETTINGS }
-      else data.settings = normalizeSettings(data.settings)
-      if (!Array.isArray(data.events)) data.events = []
-      return data
-    }
-  } catch (e) {
-    console.error('fs read error', e)
+  return {
+    settings: normalizeSettings(settings),
+    events: (events || []).map((event) => ({
+      ...event,
+      at: new Date(event.at).toISOString(),
+      source: event.source || 'manual',
+      note: event.note || '',
+    })),
   }
-  return defaultData()
 }
 
 async function writeData(data) {
-  if (hasBlobToken()) {
-    await put(BLOB_PATH, JSON.stringify(data), {
-      access: 'private',
-      allowOverwrite: true,
-      contentType: 'application/json',
+  const settings = normalizeSettings(data.settings)
+  await db('roomtap_settings', {
+    method: 'POST',
+    headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({ id: 'default', data: settings, updated_at: new Date().toISOString() }),
+  })
+
+  const events = Array.isArray(data.events) ? data.events : []
+  if (events.length) {
+    await db('roomtap_events', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(events.map((event) => ({
+        id: String(event.id),
+        type: event.type,
+        at: new Date(event.at).toISOString(),
+        source: event.source || 'manual',
+        note: event.note || '',
+      }))),
     })
-    return
+    const ids = events.map((event) => String(event.id))
+    await db(`roomtap_events?id=not.in.(${ids.map(encodeURIComponent).join(',')})`, { method: 'DELETE' })
+  } else {
+    await db('roomtap_events?id=not.is.null', { method: 'DELETE' })
   }
-  const p = process.env.VERCEL ? TMP_PATH : LOCAL_PATH
-  fs.writeFileSync(p, JSON.stringify(data), 'utf8')
 }
 
 export { readData, writeData, defaultData, DEFAULT_SETTINGS }
